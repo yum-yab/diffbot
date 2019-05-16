@@ -3,20 +3,22 @@ package org.dbpedia.diffbot
 import java.io.ByteArrayOutputStream
 
 import com.typesafe.config.ConfigFactory
-import org.apache.jena.query.{ParameterizedSparqlString, QueryExecution, QueryExecutionFactory, ResultSet, ResultSetFormatter}
+import org.apache.jena.query.{ParameterizedSparqlString, QueryExecution, QueryExecutionFactory, QuerySolution, ResultSet, ResultSetFormatter}
 import org.slf4j.{Logger, LoggerFactory}
+
 import sys.process._
 import java.net.URL
 import java.io.File
+import java.text.SimpleDateFormat
+
 import scala.collection.mutable.ListBuffer
 import scala.collection.JavaConverters._
-import scala.util.parsing.json.JSON
 
 object DiffUtils {
 
   final val config = ConfigFactory.load("diffbot.conf")
   final val logger = LoggerFactory.getLogger(this.getClass)
-
+  final val dateFormat = new SimpleDateFormat("yyyy.MM.dd")
 
   def readStringFromConfig(id : String): String = {
     config.getString(id)
@@ -29,72 +31,10 @@ object DiffUtils {
     */
 
   def generateConfigDatasets(): List[Dataset] = {
-    var datasets = new ListBuffer[Dataset]()
-    for (dataset <- config.getStringList("datasets.supervised").asScala) {
-      datasets += new Dataset(dataset, config.getStringList("datasets."+dataset+".artifacts").asScala.toList, config.getStringList("datasets."+dataset+".content-variants").asScala.toList)
+    val datasetNames : List[String] = config.getStringList("datasets.supervised").asScala.toList
+    return for (datasetName <- datasetNames) yield {
+      new Dataset(datasetName, getResources(datasetName, "2019.04.05"))
     }
-    datasets.toList
-  }
-
-  /**
-    * Connects to the SPARQL Endpint to get all the versions of an Artifact and the related Graph (databus-dataid)
-    * @param artifact
-    * @param datasetname
-    * @return
-    */
-
-
-  def getAllArtifactVersions(artifact : String, datasetname : String): Map[String,String] = {
-
-    val user = config.getString("cnfg.releaser")
-    val endpoint = config.getString("cnfg.endpoint")
-
-    val query = new ParameterizedSparqlString(
-      "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-        "PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
-        "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
-        "SELECT DISTINCT ?version ?g WHERE {\n  " +
-        "{GRAPH ?g  { " +
-        "<https://databus.dbpedia.org/" + user + "/" + datasetname + "/" + artifact + "> rdf:type dataid:Artifact .\n" +
-        "?version rdf:type dataid:Version . \n}" +
-        "}\n" +
-        "} ").asQuery()
-    val resultSet = SparqlClient.sendQuery(query)
-    var resultMap = Map[String, String]()
-    while (resultSet.hasNext) {
-      val solution = resultSet.next()
-      resultMap += (getVersionFromUri(solution.getResource("?version").getURI) -> solution.getResource("?g").getURI)
-    }
-    if (resultMap.isEmpty) {logger.warn(printf("No Versions found for %a in %d.", artifact, datasetname).toString)}
-    resultMap
-  }
-
-  /**
-    * Returns the dowload URLS for this specific graph (dataid of dbpedia-databus)
-    * @param graph
-    * @return
-    */
-  def getDownloadURLS (graph : String): List[String] = {
-    val query = new ParameterizedSparqlString("PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
-      "PREFIX dct:    <http://purl.org/dc/terms/>\n" +
-      "PREFIX dcat:   <http://www.w3.org/ns/dcat#>\n" +
-      "PREFIX db:     <https://databus.dbpedia.org/>\n" +
-      "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-      "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
-      "SELECT DISTINCT ?URL " +
-      "WHERE {\n" +
-      "  GRAPH <"+graph+"> " +
-      "{?file dcat:downloadURL ?URL}" +
-      "\n} ").asQuery()
-
-    val resultSet = SparqlClient.sendQuery(query)
-    var resultList = List[String]()
-
-    while (resultSet.hasNext) {
-      resultList = (resultSet.next().getResource("?URL").getURI) :: resultList
-    }
-    if (resultList.isEmpty) {logger.warn("No Download URLS in this Graph")}
-    resultList
   }
 
   def downloadFiles (urls : List[String], targetpath : String): Unit = {
@@ -105,30 +45,135 @@ object DiffUtils {
 
   }
 
-  private def getVersionFromUri (uri : String) : String ={
+  /**
+    *
+    * @param diffId
+    * @return
+    */
+  def getLastDiffVersion (diffId : String): String = {
+    val user = config.getString("cnfg.releaser")
+    val endpoint = config.getString("cnfg.release")
+
+    val query = new ParameterizedSparqlString("" +
+      "PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
+      "PREFIX dct:    <http://purl.org/dc/terms/>\n" +
+      "PREFIX dcat:   <http://www.w3.org/ns/dcat#>\n" +
+      "PREFIX db:     <https://databus.dbpedia.org/>\n" +
+      "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+      "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
+      "SELECT DISTINCT ?version WHERE {\n" +
+      "  GRAPH ?g { \n" +
+      "    <https://databus.dbpedia.org/"+user+"/"+diffId+"> rdf:type dataid:Group .\n" +
+      "    ?version rdf:type dataid:Version.\n" +
+      "  }\n" +
+      "} ").asQuery()
+
+    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala.sortBy(solution => getIdentifier(solution.getResource("?version").getURI))
+    logger.info("Found "+resultList.size+" diff-versions")
+    logger.info("Latest version")
+    getIdentifier(resultList.head.getResource("?version").getURI)
+  }
+
+  /**
+    * Sends SPARQL-Query to the dbpedia endpoint to check for all the versions of it
+    * @param datasetName
+    * @param lastVersion
+    * @return a list with the tuple (artifact, version, downloadURL) later then lastVersion, sorted by the version
+    */
+  def getResources (datasetName : String, lastVersion : String): List[(String, String, String)] = {
+
+    logger.info("Getting the resources for "+datasetName)
+    val user = config.getString("cnfg.releaser")
+    val endpoint = config.getString("cnfg.endpoint")
+
+    val query = new ParameterizedSparqlString("" +
+      "PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
+      "PREFIX dct:    <http://purl.org/dc/terms/>\n" +
+      "PREFIX dcat:   <http://www.w3.org/ns/dcat#>\n" +
+      "PREFIX db:     <https://databus.dbpedia.org/>\n" +
+      "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+      "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
+      "SELECT DISTINCT ?artifact ?version ?URL WHERE {\n" +
+      "  GRAPH ?g {\n    <https://databus.dbpedia.org/"+user+"/"+datasetName+"> rdf:type dataid:Group .\n" +
+      "    ?artifact rdf:type dataid:Artifact .\n" +
+      "    ?version rdf:type dataid:Version .\n" +
+      "    ?c dcat:downloadURL ?URL\n" +
+      "  }\n" +
+      "} \n" +
+      "ORDER BY ?artifact").asQuery()
+    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala
+
+
+    val results = for (solution <- resultList if (solution.getResource("?version").getURI.split("/").reverse.head.compareTo(lastVersion) >= 0)) yield {
+      val artifact = DiffUtils.getIdentifier(solution.getResource("?artifact").getURI)
+      val version = DiffUtils.getIdentifier(solution.getResource("?version").getURI)
+      val URL = solution.getResource("?URL").getURI
+      (artifact, version, URL)
+    }
+    if (resultList.isEmpty) {logger.warn(printf("There are no released versions for %s from %s.", datasetName, user).toString)}
+    else {logger.info("Found "+results.size+" files for dataset "+datasetName+".")}
+    results.toList.sortBy(tuple => tuple._2)
+  }
+
+
+
+
+  private def getIdFromUri (uri : String) : String ={
     val urisplit = uri.split("/")
     urisplit(urisplit.length-1)
   }
 
   /**
-    * Downloads a File to the given Path
+    * Downloads a File to the given Path (copied from StackOverflow)
     * @param url File-URL
     * @param path Path to save to
     * @return False if an Error ocurred, else true
     */
 
-  private def downloadFile (url : String, path : String) : Boolean = {
+  def downloadFile (url : String, path : String) : Boolean = {
     try {
       new URL(url) #> new File(path) !!;
       logger.info("Successfully downloaded to "+path)
       true
     } catch {
       case e : Exception => {
-        logger.error(printf("There was a problem Downloading and saving the File from %u to %p.", url, path).toString)
+        logger.error("There was a problem Downloading and saving the File from "+url+" to "+path+".")
         false
       }
     }
 
+  }
+
+  def getLatestRelease (): String = {
+
+    val user = config.getString("cnfg.releaser")
+    val diffId = config.getString("cnfg.diffId")
+    val endpoint = config.getString("cnfg.release")
+
+    val query = new ParameterizedSparqlString("" +
+      "PREFIX  dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
+      "PREFIX  dct:  <http://purl.org/dc/terms/>\n" +
+      "PREFIX  rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
+      "PREFIX  rdfs: <http://www.w3.org/2000/01/rdf-schema#>\n" +
+      "PREFIX  dcat: <http://www.w3.org/ns/dcat#>\n" +
+      "PREFIX  db:   <https://databus.dbpedia.org/>\n" +
+      "PREFIX  prov: <http://www.w3.org/ns/prov#>\n\n" +
+      "SELECT DISTINCT ?version\n" +
+      "WHERE\n" +
+      "  { GRAPH ?g\n" +
+      "      { " +
+      "         ?s prov:wasDerivedFrom ?version." +
+      "         <https://databus.dbpedia.org/"+user+"/"+diffId+"> rdf:type dataid:Group ." +
+      "      }\n" +
+      "  }").asQuery()
+
+    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala
+
+    (for (solution <- resultList) yield {getIdentifier(solution.getResource("?version").getURI)}).sortBy(version => version).reverse.head
+  }
+
+  def getIdentifier (url : String): String = {
+    url.split("/").reverse.head
   }
 
 }

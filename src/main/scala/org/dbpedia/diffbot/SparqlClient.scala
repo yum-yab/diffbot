@@ -7,9 +7,7 @@ object SparqlClient {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
 
-  final val endpoint = ConfigFactory.load("diffbot.conf").getString("cnfg.endpoint")
-
-  def sendQuery (query: Query): ResultSet = {
+  def sendQuery (query: Query, endpoint : String): ResultSet = {
     try {
 
       val execution = QueryExecutionFactory.sparqlService(endpoint, query)

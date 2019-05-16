@@ -33,17 +33,17 @@ then
 		fi
 	done
 	
-	echo "Working on file ${1##*/} and ${2##*/}"
+	echo "Working on file ${1##*/}"
 	
-	LC_ALL=C sort -u -T $target $1 > ${target}/oldfilePipe${number} &
-	LC_ALL=C sort -u -T $target $2 > ${target}/newfilePipe${number} &
+	lbzcat $1 | sort -u -T $target > ${target}/oldfilePipe${number} &
+	lbzcat $2 | sort -u -T $target > ${target}/newfilePipe${number} &
 
 	#touch file because with no adds _adds.ttl wont be created
 	touch ${target}/${rawname}_adds.ttl
 
 
 	comm -3 ${target}/oldfilePipe${number} ${target}/newfilePipe${number} | awk '/^[\t]/ {print substr($0,2)>"'${target}/${rawname}'_adds.ttl";next} 1' > ${target}/${rawname}_deletes.ttl
-	python3 ~/difftest/QuitDiff/bin/quit-diff --diffFormat=eccrev . ${target}/${rawname}_deletes.ttl 1 2 ${target}/${rawname}_adds.ttl > ${target}/${rawname}_eccrev.trig #read parsed files
+	#python3 /home/denis/Workspace/job/QuitDiff/bin/quit-diff --diffFormat=eccrev . ${target}/${rawname}_deletes.ttl 1 2 ${target}/${rawname}_adds.ttl > ${target}/${rawname}_eccrev.trig #read parsed files
 
 	endtime=$(date +%s)
 	time=$(($endtime - $starttime))
@@ -83,7 +83,7 @@ while test $# -gt 0; do
 				echo "Target directory does not exist."
 				exit 1
 			fi
-                     	;;
+      ;;
 		*)
 			break	
 			;;
@@ -107,12 +107,11 @@ for dir in $1/* ; do
 			mkdir "${targetdir}/${artifact}-diff/${date}"
 		fi
 		if [ -d $dir/$2/ ] && [ -d $dir/$3/ ]
-		then 
-			for file in $dir/$2/*.ttl ; do
+		then
+			for file in $dir/$2/*.ttl.bz2 ; do
 				filename=$(basename $file)
 				newfile=$dir/$3/$filename
 				fulltarget="${targetdir}/${artifact}-diff/${date}"
-		
 				if [ -f $newfile ]
 				then
 					if [ -d "$targetdir" ]

@@ -24,9 +24,8 @@ TMPFILE=$location/tmpfolder/tmpfile
 for file in $VERSION/*.ttl.bz2; do
         echo "processing $file ..." >> $LOG  ;
         lbzip2 -dc $file |\
-	/usr/local/bin/rapper -i ntriples -O - - file 2>>$LOG |\
-	ascii2uni -a U 2>>$LOG  |\
-	LC_ALL=C sort --parallel=4 -u -T $location/tmpfolder > $TMPFILE;
+	      rapper -i ntriples -O - - file 2>>$LOG |\
+      	LC_ALL=C sort --parallel=4 -u -T $location/tmpfolder > $TMPFILE;
         echo "finished processing $file" >> $LOG ;
         mv $TMPFILE ${file%.*};
 	rm $file

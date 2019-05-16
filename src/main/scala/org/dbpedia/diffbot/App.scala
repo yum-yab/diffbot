@@ -15,14 +15,18 @@ object App {
 
 
   def main(args : Array[String]): Unit = {
-    val datasets = DiffUtils.generateConfigDatasets()
-
+    //val datasets = DiffUtils.generateConfigDatasets()
+    /*
     //val sparqlResult = DiffUtils.getDownloadURLS("https://downloads.dbpedia.org/tmpdev/dbpedia-synth/mappings-synth/specific-mappingbased-properties/2019.04.07/dataid.ttl")
     val versionMap = DiffUtils.getAllArtifactVersions("specific-mappingbased-properties", "mappings-synth")
     for (version <- versionMap.keys.toList.sortBy(keys => keys)) {println("Version: "+version+" und Graph: "+versionMap(version))}
     DiffUtils.downloadFiles(DiffUtils.getDownloadURLS(versionMap("2019.04.13")), DiffUtils.readStringFromConfig("cnfg.localDir"))
 
+     */
+    val datasets = DiffUtils.generateConfigDatasets()
 
+    val diffHandler = new DiffHandler(datasets)
+    diffHandler.handleDatasets()
   }
 
 }
