@@ -14,16 +14,17 @@ import org.apache.maven.shared.invoker._
 import scala.collection.SortedSet
 
 /**
-  * Handle one Dataset
-  * @param datasets
-  * @param diffVersion
-  * @param diffId
+  * Handle one Diff
+  * @param datasets - List of datasets
+  * @param diffVersion - version on which the diff should be released (default todays date)
+  * @param diffId - name of the diff
   */
 
-class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffUtils.dateFormat.format(Calendar.getInstance().getTime()), val diffId : String = DiffUtils.readStringFromConfig("cnfg.diffId")) {
+class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffUtils.dateFormat.format(Calendar.getInstance().getTime()), val diffId : String = DiffUtils.readStringFromConfig("diff.diffId")) {
 
-  // directory with all the scripts
+  // parent directory of the poms
   private val localDir = DiffUtils.readStringFromConfig("cnfg.localDir")
+  // directory with all the scripts
   private val scriptdir = ConfigFactory.load("diffbot.conf").getString("cnfg.scripts")
   final val logger = LoggerFactory.getLogger(this.getClass)
 
@@ -63,6 +64,8 @@ class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffU
 
       }
     }
+
+    // Not tested yet
     /*
 
     val invoker = new DefaultInvoker

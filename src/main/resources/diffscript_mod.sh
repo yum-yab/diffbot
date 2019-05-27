@@ -43,7 +43,8 @@ then
 
 
 	comm -3 ${target}/oldfilePipe${number} ${target}/newfilePipe${number} | awk '/^[\t]/ {print substr($0,2)>"'${target}/${rawname}'_adds.ttl";next} 1' > ${target}/${rawname}_deletes.ttl
-	#python3 /home/denis/Workspace/job/QuitDiff/bin/quit-diff --diffFormat=eccrev . ${target}/${rawname}_deletes.ttl 1 2 ${target}/${rawname}_adds.ttl > ${target}/${rawname}_eccrev.trig #read parsed files
+	# not using quitdiff for testing/performance issues (yet)
+	#quit-diff --diffFormat=eccrev . ${target}/${rawname}_deletes.ttl 1 2 ${target}/${rawname}_adds.ttl > ${target}/${rawname}_eccrev.trig #read parsed files
 
 	endtime=$(date +%s)
 	time=$(($endtime - $starttime))

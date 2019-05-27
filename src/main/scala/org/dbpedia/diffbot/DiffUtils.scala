@@ -32,59 +32,25 @@ object DiffUtils {
 
   def generateConfigDatasets(): List[Dataset] = {
     val datasetNames : List[String] = config.getStringList("datasets.supervised").asScala.toList
-    return for (datasetName <- datasetNames) yield {
-      new Dataset(datasetName, getResources(datasetName, "2019.04.05"))
+    for (datasetName <- datasetNames) yield {
+      new Dataset(datasetName, getResources(datasetName))
     }
   }
 
-  def downloadFiles (urls : List[String], targetpath : String): Unit = {
-    for (url <- urls) {
-      val filename = url.split("/")(url.split("/").length-1)
-      downloadFile(url, targetpath+filename)
-    }
 
-  }
-
-  /**
-    *
-    * @param diffId
-    * @return
-    */
-  def getLastDiffVersion (diffId : String): String = {
-    val user = config.getString("cnfg.releaser")
-    val endpoint = config.getString("cnfg.release")
-
-    val query = new ParameterizedSparqlString("" +
-      "PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
-      "PREFIX dct:    <http://purl.org/dc/terms/>\n" +
-      "PREFIX dcat:   <http://www.w3.org/ns/dcat#>\n" +
-      "PREFIX db:     <https://databus.dbpedia.org/>\n" +
-      "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
-      "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
-      "SELECT DISTINCT ?version WHERE {\n" +
-      "  GRAPH ?g { \n" +
-      "    <https://databus.dbpedia.org/"+user+"/"+diffId+"> rdf:type dataid:Group .\n" +
-      "    ?version rdf:type dataid:Version.\n" +
-      "  }\n" +
-      "} ").asQuery()
-
-    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala.sortBy(solution => getIdentifier(solution.getResource("?version").getURI))
-    logger.info("Found "+resultList.size+" diff-versions")
-    logger.info("Latest version")
-    getIdentifier(resultList.head.getResource("?version").getURI)
-  }
 
   /**
     * Sends SPARQL-Query to the dbpedia endpoint to check for all the versions of it
     * @param datasetName
-    * @param lastVersion
     * @return a list with the tuple (artifact, version, downloadURL) later then lastVersion, sorted by the version
     */
-  def getResources (datasetName : String, lastVersion : String): List[(String, String, String)] = {
+  def getResources (datasetName : String): List[(String, String, String)] = {
 
     logger.info("Getting the resources for "+datasetName)
-    val user = config.getString("cnfg.releaser")
-    val endpoint = config.getString("cnfg.endpoint")
+    val user = config.getString("datasets.releaser")
+    val endpoint = config.getString("datasets.endpoint")
+    val diffReleases = getDiffReleases()
+
 
     val query = new ParameterizedSparqlString("" +
       "PREFIX dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
@@ -101,27 +67,27 @@ object DiffUtils {
       "  }\n" +
       "} \n" +
       "ORDER BY ?artifact").asQuery()
-    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala
+    val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala.sortBy(solution => getIdentifier(solution.getResource("?version").getURI))
+
+    val lastVersion = diffReleases.reverse.head match {
+      case null => getIdentifier(resultList.head.getResource("?version").getURI)
+      case _ => diffReleases.reverse.head
+    }
 
 
-    val results = for (solution <- resultList if (solution.getResource("?version").getURI.split("/").reverse.head.compareTo(lastVersion) >= 0)) yield {
+
+    val results = for (solution <- resultList if (getIdentifier(solution.getResource("?version").getURI).compareTo(lastVersion) >= 0)) yield {
       val artifact = DiffUtils.getIdentifier(solution.getResource("?artifact").getURI)
       val version = DiffUtils.getIdentifier(solution.getResource("?version").getURI)
       val URL = solution.getResource("?URL").getURI
       (artifact, version, URL)
     }
+
     if (resultList.isEmpty) {logger.warn(printf("There are no released versions for %s from %s.", datasetName, user).toString)}
     else {logger.info("Found "+results.size+" files for dataset "+datasetName+".")}
-    results.toList.sortBy(tuple => tuple._2)
+    results.toList
   }
 
-
-
-
-  private def getIdFromUri (uri : String) : String ={
-    val urisplit = uri.split("/")
-    urisplit(urisplit.length-1)
-  }
 
   /**
     * Downloads a File to the given Path (copied from StackOverflow)
@@ -144,11 +110,11 @@ object DiffUtils {
 
   }
 
-  def getLatestRelease (): String = {
+  def getDiffReleases (): List[String] = {
 
-    val user = config.getString("cnfg.releaser")
-    val diffId = config.getString("cnfg.diffId")
-    val endpoint = config.getString("cnfg.release")
+    val user = config.getString("diff.releaser")
+    val diffId = config.getString("diff.diffId")
+    val endpoint = config.getString("diff.endpoint")
 
     val query = new ParameterizedSparqlString("" +
       "PREFIX  dataid: <http://dataid.dbpedia.org/ns/core#>\n" +
@@ -169,7 +135,7 @@ object DiffUtils {
 
     val resultList = ResultSetFormatter.toList(SparqlClient.sendQuery(query, endpoint)).asScala
 
-    (for (solution <- resultList) yield {getIdentifier(solution.getResource("?version").getURI)}).sortBy(version => version).reverse.head
+    (for (solution <- resultList) yield {getIdentifier(solution.getResource("?version").getURI)}).sortBy(version => version).toList
   }
 
   def getIdentifier (url : String): String = {

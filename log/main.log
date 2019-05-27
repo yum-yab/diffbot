@@ -1,11 +1,11 @@
-15:30:19,765 INFO  DiffUtils$: Getting the resources for mappings-synth
-15:30:21,831 INFO  DiffUtils$: Found 80 files for dataset mappings-synth.
-15:30:26,663 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.05/geo-coordinates-mappingbased_lang=de.ttl.bz2
-15:30:30,181 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.05/geo-coordinates-mappingbased_lang=en.ttl.bz2
-15:30:30,573 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.05/specific-mappingbased-properties_lang=de.ttl.bz2
-15:30:32,118 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.05/specific-mappingbased-properties_lang=en.ttl.bz2
-15:30:35,431 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.06/geo-coordinates-mappingbased_lang=de.ttl.bz2
-15:30:38,291 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.06/geo-coordinates-mappingbased_lang=en.ttl.bz2
-15:30:38,656 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.06/specific-mappingbased-properties_lang=de.ttl.bz2
-15:30:40,127 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.06/specific-mappingbased-properties_lang=en.ttl.bz2
-15:30:40,129 INFO  DiffHandler$$anonfun$handleDatasets$2: Started running the diff of mappings-synth...
+22:57:24,780 INFO  DiffUtils$: Getting the resources for mappings-synth
+22:57:27,335 INFO  DiffUtils$: Found 80 files for dataset mappings-synth.
+22:57:41,071 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.05/geo-coordinates-mappingbased_lang=de.ttl.bz2
+22:57:51,913 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.05/geo-coordinates-mappingbased_lang=en.ttl.bz2
+22:57:52,979 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.05/specific-mappingbased-properties_lang=de.ttl.bz2
+22:57:57,795 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.05/specific-mappingbased-properties_lang=en.ttl.bz2
+22:58:11,772 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.06/geo-coordinates-mappingbased_lang=de.ttl.bz2
+22:58:22,852 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/geo-coordinates-mappingbased/2019.04.06/geo-coordinates-mappingbased_lang=en.ttl.bz2
+22:58:24,090 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.06/specific-mappingbased-properties_lang=de.ttl.bz2
+22:58:28,919 INFO  DiffUtils$: Successfully downloaded to /home/denis/Workspace/job/synth-datadump/mappings-synth/specific-mappingbased-properties/2019.04.06/specific-mappingbased-properties_lang=en.ttl.bz2
+22:58:28,922 INFO  DiffHandler$$anonfun$handleDatasets$2: Started running the diff of mappings-synth...
