@@ -4,6 +4,7 @@ import java.io
 import java.io.FileWriter
 import java.util.Calendar
 
+import scala.collection.JavaConversions._
 import scala.reflect.io.{Directory, File}
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
@@ -12,6 +13,7 @@ import sys.process._
 import org.apache.maven.shared.invoker._
 
 import scala.collection.SortedSet
+import scala.collection.mutable.ListBuffer
 
 /**
   * Handle one Diff
@@ -37,7 +39,7 @@ class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffU
     // Downloading the files and generating the directory structure
     for (dataset <- datasets) {
       for (result <- dataset.resources if (result._2 == dataset.oldVersion || result._2 == dataset.newVersion)) {
-        val path = localDir + "/" + dataset.name + "/" + DiffUtils.getIdentifier(result._1) + "/" + DiffUtils.getIdentifier(result._2) + "/"
+        val path = s"$localDir/${dataset.name}/${DiffUtils.getIdentifier(result._1)}/${DiffUtils.getIdentifier(result._2)}/"
         saveDirCreation(path)
         val filename = DiffUtils.getIdentifier(result._3)
         DiffUtils.downloadFile(result._3, path + filename)
@@ -56,28 +58,27 @@ class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffU
         val artifacts : Set[String] = (for (tuple <- dataset.resources) yield {tuple._1}).toSet
         for (artifact <- artifacts) {
           val fw = new FileWriter(localDir+"/"+diffId+"/"+artifact+"-diff/provenance.tsv")
-          val provenanceAdds = diffVersion + " " + baseURL + "/" + dataset.name + "/" + artifact + "/" + dataset.oldVersion + "\n" +
-            diffVersion + " " + baseURL + "/" + dataset.name + "/" + artifact + "/" + dataset.newVersion + "\n"
+          val provenanceAdds = s"$diffVersion\t$baseURL/${dataset.name}/$artifact/${dataset.oldVersion}\n" +
+            s"$diffVersion\t$baseURL/${dataset.name}/$artifact/${dataset.newVersion}\n"
           fw.write(provenanceAdds)
           fw.close()
         }
-
       }
     }
 
     // Not tested yet
-    /*
+
 
     val invoker = new DefaultInvoker
-
+    invoker.setWorkingDirectory(new io.File(s"$localDir/$diffId"))
+    invoker.setMavenHome(new io.File(DiffUtils.readStringFromConfig("cnfg.mavenHome")))
     //compress and release the diff
-    "pbzip2 "+localDir+"/"+diffId+"/*/"+diffVersion+"/" !;
+    //"pbzip2 "+localDir+"/"+diffId+"/*/"+diffVersion+"/*.*" !;
     val request = new DefaultInvocationRequest
-    request.setPomFile(new io.File(localDir+"/"+diffId))
-    request.setGoals(List("versions:set -DnewVersion="+diffVersion,"deploy").asInstanceOf[java.util.ArrayList[String]])
+    request.setPomFile(new io.File(s"$localDir/$diffId/pom.xml"))
+    request.setGoals(ListBuffer(s"versions:set -DnewVersion=$diffVersion", "deploy"))
     invoker.execute(request)
-    */
-     */
+
   }
 
 

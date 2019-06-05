@@ -2,9 +2,10 @@ package org.dbpedia.diffbot
 
 
 import java.io.ByteArrayOutputStream
+
 import org.apache.jena.query.{Query, ResultSetFormatter}
 import _root_.org.apache.jena.rdf.model.ModelFactory
-import com.typesafe.config.ConfigFactory
+import com.typesafe.config.{ConfigException, ConfigFactory}
 
 import sys.process._
 /**
@@ -25,7 +26,15 @@ object App {
      */
     val datasets = DiffUtils.generateConfigDatasets()
 
-    val diffHandler = new DiffHandler(datasets)
+
+    val diffHandler = try {
+      val diffVersion = DiffUtils.readStringFromConfig("diff.version")
+      new DiffHandler(datasets,diffVersion)
+    } catch {
+      case e: ConfigException => {
+        logger.info("No version defined in diff.version, using todays date as diff-version.")
+        new DiffHandler(datasets)}
+    }
     diffHandler.handleDatasets()
   }
 

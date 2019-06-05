@@ -60,7 +60,7 @@ object DiffUtils {
       "PREFIX rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#>\n" +
       "PREFIX rdfs:   <http://www.w3.org/2000/01/rdf-schema#>\n\n" +
       "SELECT DISTINCT ?artifact ?version ?URL WHERE {\n" +
-      "  GRAPH ?g {\n    <https://databus.dbpedia.org/"+user+"/"+datasetName+"> rdf:type dataid:Group .\n" +
+      s"  GRAPH ?g {\n    <https://databus.dbpedia.org/$user/$datasetName> rdf:type dataid:Group .\n" +
       "    ?artifact rdf:type dataid:Artifact .\n" +
       "    ?version rdf:type dataid:Version .\n" +
       "    ?c dcat:downloadURL ?URL\n" +
@@ -83,8 +83,8 @@ object DiffUtils {
       (artifact, version, URL)
     }
 
-    if (resultList.isEmpty) {logger.warn(printf("There are no released versions for %s from %s.", datasetName, user).toString)}
-    else {logger.info("Found "+results.size+" files for dataset "+datasetName+".")}
+    if (resultList.isEmpty) {logger.warn(s"There are no released versions for $datasetName from $user.")}
+    else {logger.info(s"Found ${results.size} files for dataset $datasetName.")}
     results.toList
   }
 
@@ -99,11 +99,11 @@ object DiffUtils {
   def downloadFile (url : String, path : String) : Boolean = {
     try {
       new URL(url) #> new File(path) !!;
-      logger.info("Successfully downloaded to "+path)
+      logger.info(s"Successfully downloaded to $path")
       true
     } catch {
       case e : Exception => {
-        logger.error("There was a problem Downloading and saving the File from "+url+" to "+path+".")
+        logger.error(s"There was a problem Downloading and saving the File from $url to $path.")
         false
       }
     }
@@ -129,7 +129,7 @@ object DiffUtils {
       "  { GRAPH ?g\n" +
       "      { " +
       "         ?s prov:wasDerivedFrom ?version." +
-      "         <https://databus.dbpedia.org/"+user+"/"+diffId+"> rdf:type dataid:Group ." +
+      s"         <https://databus.dbpedia.org/$user/$diffId> rdf:type dataid:Group ." +
       "      }\n" +
       "  }").asQuery()
 
