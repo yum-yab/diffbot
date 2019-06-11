@@ -67,18 +67,25 @@ class DiffHandler(val datasets : List[Dataset] ,val diffVersion : String = DiffU
     }
 
     // Not tested yet
-
+    //compress and release the diff
+    logger.info(s"Compressing the files in $diffId with version $diffVersion.")
+    "pbzip2 "+localDir+"/"+diffId+"/*/"+diffVersion+"/*.*" !;
 
     val invoker = new DefaultInvoker
     invoker.setWorkingDirectory(new io.File(s"$localDir/$diffId"))
     invoker.setMavenHome(new io.File(DiffUtils.readStringFromConfig("cnfg.mavenHome")))
-    //compress and release the diff
-    //"pbzip2 "+localDir+"/"+diffId+"/*/"+diffVersion+"/*.*" !;
-    val request = new DefaultInvocationRequest
-    request.setPomFile(new io.File(s"$localDir/$diffId/pom.xml"))
-    request.setGoals(ListBuffer(s"versions:set -DnewVersion=$diffVersion", "deploy"))
-    invoker.execute(request)
 
+    //change the version of the pom file
+    val changeDateRequest = new DefaultInvocationRequest
+    changeDateRequest.setPomFile(new io.File(s"$localDir/$diffId/pom.xml"))
+    changeDateRequest.setGoals(ListBuffer(s"versions:set -DnewVersion=$diffVersion"))
+    invoker.execute(changeDateRequest)
+
+    // deploy the release (config for that in the pom file)
+    val deployRequest = new DefaultInvocationRequest
+    deployRequest.setPomFile(new io.File(s"$localDir/$diffId/pom.xml"))
+    deployRequest.setGoals(ListBuffer("validate"))
+    invoker.execute(deployRequest)
   }
 
 

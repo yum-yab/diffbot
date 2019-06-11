@@ -12,12 +12,12 @@ object SparqlClient {
 
       val execution = QueryExecutionFactory.sparqlService(endpoint, query)
       val resultSet = execution.execSelect()
-      return resultSet
+      resultSet
     } catch {
       case e: Exception => {
         e.printStackTrace()
         logger.error("Couldnt reach sparql endpoint")
-        return null
+        null
       }
     }
   }

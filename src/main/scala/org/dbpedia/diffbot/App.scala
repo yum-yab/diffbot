@@ -26,15 +26,12 @@ object App {
      */
     val datasets = DiffUtils.generateConfigDatasets()
 
-
-    val diffHandler = try {
-      val diffVersion = DiffUtils.readStringFromConfig("diff.version")
-      new DiffHandler(datasets,diffVersion)
-    } catch {
-      case e: ConfigException => {
-        logger.info("No version defined in diff.version, using todays date as diff-version.")
-        new DiffHandler(datasets)}
+    val diffHandler = if (args(0) == null) {
+      new DiffHandler(datasets)
+    } else {
+      new DiffHandler(datasets, args(0))
     }
+
     diffHandler.handleDatasets()
   }
 
