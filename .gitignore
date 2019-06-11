@@ -37,7 +37,6 @@ log
 
 # ignore changes to the diffbot.conf and the log
 src/main/resources/diffbot.conf
-log/main.log
 
 
 # switch to regexp syntax.
