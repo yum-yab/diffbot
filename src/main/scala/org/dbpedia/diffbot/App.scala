@@ -1,38 +1,38 @@
 package org.dbpedia.diffbot
 
+import java.io.File
 
-import java.io.ByteArrayOutputStream
+import org.slf4j.LoggerFactory
 
-import org.apache.jena.query.{Query, ResultSetFormatter}
-import _root_.org.apache.jena.rdf.model.ModelFactory
-import com.typesafe.config.{ConfigException, ConfigFactory}
-
-import sys.process._
 /**
  * @author ${user.name}
  */
 object App {
-  private val logger = org.slf4j.LoggerFactory.getLogger(this.getClass)
-
 
   def main(args : Array[String]): Unit = {
-    //val datasets = DiffUtils.generateConfigDatasets()
-    /*
-    //val sparqlResult = DiffUtils.getDownloadURLS("https://downloads.dbpedia.org/tmpdev/dbpedia-synth/mappings-synth/specific-mappingbased-properties/2019.04.07/dataid.ttl")
-    val versionMap = DiffUtils.getAllArtifactVersions("specific-mappingbased-properties", "mappings-synth")
-    for (version <- versionMap.keys.toList.sortBy(keys => keys)) {println("Version: "+version+" und Graph: "+versionMap(version))}
-    DiffUtils.downloadFiles(DiffUtils.getDownloadURLS(versionMap("2019.04.13")), DiffUtils.readStringFromConfig("cnfg.localDir"))
 
-     */
-    val datasets = DiffUtils.generateConfigDatasets()
+    val logger = LoggerFactory.getLogger(this.getClass)
 
-    val diffHandler = if (args(0) == null) {
-      new DiffHandler(datasets)
+    val config = DiffUtils.generateConfig("diffbot.conf")
+
+
+    logger.info(s"datasets: ${config.dataset}")
+    logger.info(s"Local: ${config.cnfg}")
+    logger.info(s"diff: ${config.diff}")
+
+    val generator = new DatasetGenerator(config)
+
+    val datasets = generator.generateConfigDatasets()
+
+
+    val diffHandler = if (config.diff.version != null) {
+      new DiffHandler(config, datasets, config.diff.version)
     } else {
-      new DiffHandler(datasets, args(0))
+      new DiffHandler(config, datasets)
     }
-
     diffHandler.handleDatasets()
   }
+
+
 
 }

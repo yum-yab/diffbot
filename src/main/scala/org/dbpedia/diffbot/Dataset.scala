@@ -1,9 +1,7 @@
 package org.dbpedia.diffbot
 
-class Dataset(val name: String, val resources : List[(String,String,String)]) {
+case class Dataset(name: String, resources : List[DBpediaArtifact], oldVersion : String, newVersion : String)
 
-  //Old and New version generated from the sorted resources list
-  final val oldVersion = resources.head._2
-  final val newVersion = (for (tuple <- resources if (tuple._2 != oldVersion)) yield {tuple._2}).head
+case class DBpediaFile (fileName : String, downloadURL : String)
 
-}
+case class DBpediaArtifact (name : String, url : String, oldResources : Iterable[DBpediaFile], newResources : Iterable[DBpediaFile])

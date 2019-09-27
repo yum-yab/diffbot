@@ -1,8 +1,15 @@
 #! /bin/bash
 
+sdc() {
+if ! [ -d $1 ]
+then
+  mkdir $1
+fi
+}
+
 diff2Files() {
 # Syntax: diff2Files [oldFile] [newFile] [target](optional)
-if [ -f $1 ] && [ -f $2 ]
+if [[ -f $1 ]] && [[ -f $2 ]]
 then
 	starttime=$(date +%s)
 	filename="${2##*/}"
@@ -12,7 +19,7 @@ then
 	cv="${noendname#*_}"
 	rawname="${artifact}-diff_${cv}"
 	
-	if [ -z $3 ]
+	if [[ -z $3 ]]
 	then
 		target="${2%/*}"
 	else
@@ -23,7 +30,7 @@ then
 	number=1
 	while : 
 	do
-		if [ -p ${target}/oldfilePipe${number} ] || [ -p ${target}/newfilePipe${number} ]
+		if [ -p "${target}"/oldfilePipe${number} ] || [ -p "${target}"/newfilePipe${number} ]
 		then
 			number=$(($number + 1))
 		else
@@ -35,16 +42,20 @@ then
 	
 	echo "Working on file ${1##*/}"
 	
-	lbzcat $1 | sort -u -T $target > ${target}/oldfilePipe${number} &
-	lbzcat $2 | sort -u -T $target > ${target}/newfilePipe${number} &
+	lbzcat $1 | LC_ALL=C sort -u -T $target > ${target}/oldfilePipe${number} &
+	lbzcat $2 | LC_ALL=C sort -u -T $target > ${target}/newfilePipe${number} &
 
 	#touch file because with no adds _adds.ttl wont be created
 	touch ${target}/${rawname}_adds.ttl
 
 
-	comm -3 ${target}/oldfilePipe${number} ${target}/newfilePipe${number} | awk '/^[\t]/ {print substr($0,2)>"'${target}/${rawname}'_adds.ttl";next} 1' > ${target}/${rawname}_deletes.ttl
+	LC_ALL=C comm -3 ${target}/oldfilePipe${number} ${target}/newfilePipe${number} | awk '/^[\t]/ {print substr($0,2)>"'${target}/${rawname}'_adds.ttl";next} 1' > ${target}/${rawname}_deletes.ttl
 	# not using quitdiff for testing/performance issues (yet)
 	#quit-diff --diffFormat=eccrev . ${target}/${rawname}_deletes.ttl 1 2 ${target}/${rawname}_adds.ttl > ${target}/${rawname}_eccrev.trig #read parsed files
+
+  # Compressing the diff
+  pbzip2 -f $target/*.ttl
+
 
 	endtime=$(date +%s)
 	time=$(($endtime - $starttime))
@@ -104,8 +115,8 @@ for dir in $1/* ; do
 		if [ -d "$targetdir" ]
 		then
 			artifact=$(basename $dir)
-			mkdir "${targetdir}/${artifact}-diff"
-			mkdir "${targetdir}/${artifact}-diff/${date}"
+			sdc "${targetdir}/${artifact}-diff"
+			sdc "${targetdir}/${artifact}-diff/${date}"
 		fi
 		if [ -d $dir/$2/ ] && [ -d $dir/$3/ ]
 		then
