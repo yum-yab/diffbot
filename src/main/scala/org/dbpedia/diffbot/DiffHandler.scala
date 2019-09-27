@@ -86,7 +86,7 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
     runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List(s"versions:set -DnewVersion=$diffVersion"))
 
     // deploy the release (config for that in the pom file)
-    runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List("validate"))
+    runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List("deploy"))
     logger.info(s"Finished all datasets and deploying to the databus")
   }
 

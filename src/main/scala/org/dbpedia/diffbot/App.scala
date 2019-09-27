@@ -15,11 +15,6 @@ object App {
 
     val config = DiffUtils.generateConfig("diffbot.conf")
 
-
-    logger.info(s"datasets: ${config.dataset}")
-    logger.info(s"Local: ${config.cnfg}")
-    logger.info(s"diff: ${config.diff}")
-
     val generator = new DatasetGenerator(config)
 
     val datasets = generator.generateConfigDatasets()
