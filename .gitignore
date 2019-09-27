@@ -28,15 +28,13 @@ dist
 test-output
 build.log
 log
+out
+dependency-reduced-pom.xml
 
 # other scm
 .svn
 .CVS
 .hg*
-
-
-# ignore changes to the diffbot.conf and the log
-src/main/resources/diffbot.conf
 
 
 # switch to regexp syntax.
