@@ -21,3 +21,12 @@ A bot for chronically diffing some supervised datasets.
 	- mavenHome: your maven home (run mvn --version to see it)
 	- localDir: the directory where the datasets and the diffs are saved (must be big enough)
 	- scripts: directory with the realted scripts (default ./src/main/resources, dont change if you didn´t change the scripts)
+
+### Getting started
+
+Clone the repo, configure the diffbot.conf file and run 
+
+```
+mvn clean package
+``` 
+to generate the jar.
