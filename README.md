@@ -20,7 +20,7 @@ A bot for chronically diffing some supervised datasets.
 * cnfg: system related configuration
 	- mavenHome: your maven home (run mvn --version to see it)
 	- localDir: the directory where the datasets and the diffs are saved (must be big enough)
-	- scripts: directory with the realted scripts (default ./src/main/resources, dont change if you didn´t change the scripts)
+	- scripts: directory with the realted scripts (needed for running it as a jar, should be redundant soon)
 
 ### Getting started
 
