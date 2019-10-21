@@ -1,8 +1,8 @@
 package org.dbpedia.diffbot
 
-import java.io.File
 
 import org.slf4j.LoggerFactory
+
 
 /**
  * @author ${user.name}
@@ -20,14 +20,16 @@ object App {
     val datasets = generator.generateConfigDatasets()
 
 
-    val diffHandler = if (config.diff.version != null) {
+    val diffHandler = if (config.diff.version != null && (config.diff.version match {
+      case  DiffUtils.versionRegex(_) => true
+      case _ => logger.info(s"Wrong version format!"); System.exit(1);false
+    })) {
       new DiffHandler(config, datasets, config.diff.version)
     } else {
       new DiffHandler(config, datasets)
     }
     diffHandler.handleDatasets()
+
+
   }
-
-
-
 }

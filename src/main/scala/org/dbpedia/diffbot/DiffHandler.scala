@@ -1,22 +1,22 @@
 package org.dbpedia.diffbot
 
 import java.io
-import java.io.{BufferedInputStream, FileInputStream, FileWriter, IOException, OutputStream, File}
+import java.io.{File, FileWriter}
 import java.net.URL
 import java.util.Calendar
 
 import scala.collection.JavaConversions._
-import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+
 import sys.process._
 import org.apache.maven.shared.invoker._
-
 import java.nio.file.Files.copy
 import java.nio.file.Paths.get
 import java.nio.file.StandardCopyOption.REPLACE_EXISTING
 
-import scala.collection.SortedSet
-import scala.collection.mutable.ListBuffer
+import org.apache.commons.io.FileUtils
+
+import scala.io.Source
 
 
 /**
@@ -28,17 +28,15 @@ import scala.collection.mutable.ListBuffer
 class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVersion : String = DiffUtils.dateFormat.format(Calendar.getInstance().getTime())) {
 
   val diffId = config.diff.diffId
-  // parent directory of the poms
   private val localDir = config.cnfg.localDir
-  // directory with all the scripts
-  private val scriptdir = config.cnfg.scriptDir
   final val logger = LoggerFactory.getLogger(this.getClass)
+  // writing the bash diff script to the local directory to run
+  //TODO: there needs to be sth better then this
+  private val scriptpath = writeBashScript()
 
   private val invoker = new DefaultInvoker
   invoker.setWorkingDirectory(new io.File(s"$localDir/$diffId"))
   invoker.setMavenHome(new io.File(config.cnfg.mavenHome))
-
-
 
 
   def handleDatasets (): Unit = {
@@ -57,7 +55,7 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
         for (oldfile <- artifact.oldResources) {
           DiffUtils.downloadFile(new URL(oldfile.downloadURL), s"$oldVersionPath/${oldfile.fileName}")
           val newfile = getDifferentFile(artifact.newResources, oldfile)
-          if ( newfile != null) {
+          if (newfile != null) {
             DiffUtils.downloadFile(new URL(newfile.downloadURL), s"$newVersionPath/${newfile.fileName}")
             logger.info(s"Starting the diff between ${oldfile.fileName} of versions ${dataset.oldVersion} and ${dataset.newVersion}...")
             diffFiles(s"$oldVersionPath/${oldfile.fileName}", s"$newVersionPath/${newfile.fileName}", s"$diffArtifactPath/$diffVersion")
@@ -81,25 +79,22 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
       logger.info(s"Successfully finished ${dataset.name}!")
     }
 
-
+    //removeDiffScript(scriptpath)
     //change the version of the pom file
-    runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List(s"versions:set -DnewVersion=$diffVersion"))
+    runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List("-B","versions:set", s"-DnewVersion=$diffVersion"))
 
     // deploy the release (config for that in the pom file)
-    runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List("deploy"))
+    //runMavenCommand(new io.File(s"$localDir/$diffId/pom.xml"), List("-B", "deploy"))
     logger.info(s"Finished all datasets and deploying to the databus")
   }
 
 
   private def diffFiles(oldFilePath : String, newFilePath : String, target : String): Boolean = {
-    val returncode = s"$scriptdir/diff2Files.sh $oldFilePath $newFilePath $target" !;
-    if (returncode == 0) {true} else {false}
+    val returncode = Process(Seq("/usr/bin/bash",scriptpath, oldFilePath, newFilePath, target)) !!;
+
+    if (returncode == 0) true else false
   }
 
-  private def runRapandSort (datadir : String, logLocation : String): Boolean = {
-    val returncode = scriptdir+"rapandsort_mod.sh "+datadir+" "+logLocation !;
-    if (returncode == 0) {true} else {false}
-  }
 
 
   private def saveDirCreation (path:String) {
@@ -107,14 +102,6 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
     if (!file.isDirectory) {
       file.mkdirs
     }
-  }
-
-
-  private def getBaseURL (downloadURL : String): String = {
-    // Removes 4 last parts of URL: filename, version, artifact and groupId
-    val URLbody = downloadURL.replace("https://", "").split("/").reverse.tail.tail.tail.tail.reverse
-
-    "https://"+URLbody.mkString("/")
   }
 
   private def writeProvFile (oldVersionURL : String, newVersionURL : String, path : String): Unit = {
@@ -125,11 +112,12 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
     fw.close()
   }
 
-  private def runMavenCommand (pomfile : io.File, goals : List[String]): Unit = {
+  private def runMavenCommand (pomfile : io.File, goals : List[String]): Int = {
     val request = new DefaultInvocationRequest
     request.setPomFile(pomfile)
     request.setGoals(goals)
-    invoker.execute(request)
+    val result = invoker.execute(request)
+    result.getExitCode
   }
 
   private def getDifferentFile(list : Iterable[DBpediaFile], file : DBpediaFile): DBpediaFile = {
@@ -149,6 +137,30 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
 
     filename match {
       case filenamePattern(artifact, cvs, fileType, compression) => s"$artifact${cvs}_$cv$fileType$compression"
+    }
+  }
+
+  private def writeBashScript (): String =  {
+    val stream = getClass.getResourceAsStream("/diff2Files.sh")
+    val script = Source.fromInputStream(stream).getLines().mkString("\n")
+    val scriptfile = new File(s"$localDir/.diff2Files.sh")
+    val fileExists = scriptfile.exists
+
+    if (!fileExists) {
+      val writer = new FileWriter(scriptfile)
+      writer.write(script)
+      writer.close()
+    }
+
+
+    s"$localDir/.diff2Files.sh"
+  }
+
+  private def removeDiffScript(scriptpath : String): Unit = {
+    val file = new File(scriptpath)
+
+    if (file.exists()) {
+      FileUtils.deleteQuietly(file)
     }
   }
 }

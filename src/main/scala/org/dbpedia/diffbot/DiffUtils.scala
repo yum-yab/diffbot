@@ -15,10 +15,8 @@ object DiffUtils {
 
   final val logger = LoggerFactory.getLogger(this.getClass)
   final val dateFormat = new SimpleDateFormat("yyyy.MM.dd")
+  final val versionRegex = """([\d]{4}\.[\d]{2}\.[\d]{2})""".r
 
-  def readStringFromConfig (id : String, conf : com.typesafe.config.Config): String = {
-    conf.getString(id)
-  }
 
   def generateConfig(configPath : String): Config = {
     val config = ConfigFactory.load(configPath)
@@ -35,8 +33,7 @@ object DiffUtils {
     )
     val localConf = LocalConfig(
       mavenHome = config.getString("cnfg.mavenHome"),
-      localDir = config.getString("cnfg.localDir"),
-      scriptDir = config.getString("cnfg.scripts")
+      localDir = config.getString("cnfg.localDir")
     )
     Config(
       diff = diffConf,

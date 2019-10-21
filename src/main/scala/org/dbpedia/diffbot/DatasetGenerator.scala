@@ -85,7 +85,7 @@ class DatasetGenerator (config : Config) {
   }
 
   private def getDiffVersions (dataset: String): (String, String) = {
-    val versionRegex = """([\d]{4}\.[\d]{2}\.[\d]{2})""".r.unanchored
+    val versionRegex = DiffUtils.versionRegex.unanchored
     val releasedVersions = getLastReleases(dataset)
     val diffedVersions = getDiffReleases(dataset)
 

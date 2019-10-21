@@ -6,4 +6,4 @@ case class DiffConfig(diffId : String, endpoint : String, releaser : String, ver
 
 case class DatasetConfig(datasetNames : List[String], endpoint :String, releaser : String)
 
-case class LocalConfig(mavenHome : String, localDir : String, scriptDir : String)
+case class LocalConfig(mavenHome : String, localDir : String)
