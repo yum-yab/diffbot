@@ -36,9 +36,6 @@ dependency-reduced-pom.xml
 .CVS
 .hg*
 
-# config file
-src/main/resources/diffbot.conf
-
 # switch to regexp syntax.
 #  syntax: regexp
 #  ^\.pc/
