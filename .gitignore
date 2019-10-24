@@ -36,10 +36,12 @@ dependency-reduced-pom.xml
 .CVS
 .hg*
 
+# config file
+src/main/resources/diffbot.conf
 
 # switch to regexp syntax.
 #  syntax: regexp
 #  ^\.pc/
 
-#SHITTY output not in target directory
+#output not in target directory
 build.log
