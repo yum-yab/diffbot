@@ -141,19 +141,17 @@ class DiffHandler(val config :Config, val datasets : List[Dataset] ,val diffVers
   }
 
   private def writeBashScript (): String =  {
-    val stream = getClass.getResourceAsStream("/diff2Files.sh")
-    val script = Source.fromInputStream(stream).getLines().mkString("\n")
-    val scriptfile = new File(s"$localDir/.diff2Files.sh")
-    val fileExists = scriptfile.exists
+    val classespath = this.getClass.getProtectionDomain.getCodeSource.getLocation.getPath
 
-    if (!fileExists) {
-      val writer = new FileWriter(scriptfile)
-      writer.write(script)
-      writer.close()
+    val normalPathPattern = """(/.+)*/""".r
+    val jarPattern = """(/.*)*/.*\.jar""".r
+
+    val returnpath = classespath match {
+      case normalPathPattern(_*) => classespath
+      case jarPattern(path, _*) => path+"/classes/"
     }
 
-
-    s"$localDir/.diff2Files.sh"
+    s"${returnpath}diff2Files.sh"
   }
 
   private def removeDiffScript(scriptpath : String): Unit = {
